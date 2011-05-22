@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<description
+ xmlns="http://openoffice.org/extensions/description/2006"
+ xmlns:dep="http://openoffice.org/extensions/description/2006"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<identifier value="vnd.basicaddonbuilder.expandanimations"/>
+	
+	<version value="0.1.0"/>
+	<!-- <dependencies>
+		<OpenOffice.org-minimal-version value="2.1" dep:name="OpenOffice.org 2.1"/>
+	</dependencies> -->
+	<registration>
+		<simple-license  accept-by="admin" default-license-id="ID0" suppress-on-update="true" >
+			<license-text xlink:href="registration/lgpl-3.0.txt" lang="en" license-id="ID0" />
+		</simple-license>
+	</registration>
+	
+	  <display-name>
+			<name lang="en">Expand Animations</name>
+		</display-name>
+</description>

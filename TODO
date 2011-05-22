@@ -1,0 +1,6 @@
+- supports Appear on text fragments (i.e. only a part of a tex box must appear, see )
+- delete unnecessary animations from expanded slides
+- turn appear/disappear animations or fades into slide transitions
+- add progress dialog and make the operation modal
+- use the standard presenter machinery to "play" anims and grab frames. in particular, this would let us handle other types of animation like objects moving, resizing, changing colors, etc.
+
