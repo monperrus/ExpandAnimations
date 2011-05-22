@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="ExpandAnimations" script:language="StarBasic">
-&#39; ExpandAnimations
+&#39; ExpandAnimations (https://github.com/monperrus/ExpandAnimations)
 
-&#39; Copyright 2010-2011 Matthew Neeley.
+&#39; Copyright 2009-2011 Matthew Neeley.
 &#39; Copyright 2011 Martin Monperrus.
 
 &#39; This program is free software: you can redistribute it and/or modify
@@ -18,14 +18,6 @@
 
 &#39; You should have received a copy of the GNU Lesser General Public License
 &#39; along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
-
-&#39; future enhancements:
-&#39; - delete unnecessary animations from expanded slides
-&#39; - turn appear/disappear animations or fades into slide transitions
-&#39; - add progress dialog and make the operation modal
-&#39; - use the standard presenter machinery to &quot;play&quot; anims and grab frames.
-&#39;   in particular, this would let us handle other types of animation like
-&#39;   objects moving, resizing, changing colors, etc.
 
 Private ANIMSET as String
 Private ENUMACCESS as String

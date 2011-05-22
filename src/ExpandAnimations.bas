@@ -1,6 +1,6 @@
-' ExpandAnimations
+' ExpandAnimations (https://github.com/monperrus/ExpandAnimations)
 
-' Copyright 2010-2011 Matthew Neeley.
+' Copyright 2009-2011 Matthew Neeley.
 ' Copyright 2011 Martin Monperrus.
 
 ' This program is free software: you can redistribute it and/or modify
@@ -15,14 +15,6 @@
 
 ' You should have received a copy of the GNU Lesser General Public License
 ' along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-' future enhancements:
-' - delete unnecessary animations from expanded slides
-' - turn appear/disappear animations or fades into slide transitions
-' - add progress dialog and make the operation modal
-' - use the standard presenter machinery to "play" anims and grab frames.
-'   in particular, this would let us handle other types of animation like
-'   objects moving, resizing, changing colors, etc.
 
 Private ANIMSET as String
 Private ENUMACCESS as String
