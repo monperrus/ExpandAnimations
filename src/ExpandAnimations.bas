@@ -183,6 +183,10 @@ function getAnimatedShapes(slide as Object)
                     animNode = animNodes.nextElement()
                     if isVisibilityAnimation(animNode) then
                         target = animNode.target
+                        'special handling for com.sun.star.presentation.ParagraphTarget
+                        if (IsUnoStruct(target)) then
+                           target = target.Shape
+                        end if
                         ' if we haven't seen this shape yet, add it to the array
                         if not containsObject(shapes, target) then
                             newUBound = UBound(shapes) + 1
@@ -233,6 +237,10 @@ function getShapeVisibility(slide as Object, nFrames as Integer)
                              animNode = animNodes.nextElement()
                              if isVisibilityAnimation(animNode) then
                                 target = animNode.target
+                                'special handling for com.sun.star.presentation.ParagraphTarget
+                                if (IsUnoStruct(target)) then
+                                   target = target.Shape
+                                end if
                                 ' if this is the shape we want, check the visibility
                                 if EqualUnoObjects(shape, target) then
                                     visCurrent = animNode.To
