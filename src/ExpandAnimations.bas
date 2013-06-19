@@ -187,12 +187,14 @@ function getAnimatedShapes(slide as Object)
                         if (IsUnoStruct(target)) then
                            target = target.Shape
                         end if
-                        ' if we haven't seen this shape yet, add it to the array
-                        if not containsObject(shapes, target) then
+                        if not IsEmpty(target) then 
+                          ' if we haven't seen this shape yet, add it to the array
+                          if not containsObject(shapes, target) then
                             newUBound = UBound(shapes) + 1
                             reDim preserve shapes(newUBound)
                             shapes(newUBound) = target
-                         end if
+                          end if
+                        end if
                      end if
                  wend
             wend

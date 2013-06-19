@@ -3,7 +3,7 @@ It is a fork of an excellent macro written by Matthew Neeley (see <http://markma
 
 The extension adds a menu entry "Tools>>Add-ons>>Expand animations" in Impress. The generated PDF file is in the same folder as the source document.
 
-Download: <https://raw.github.com/monperrus/ExpandAnimations/master/dist/ExpandAnimations-0.2.oxt> (open this file with LibreOffice)
+Download: <https://raw.github.com/monperrus/ExpandAnimations/master/dist/ExpandAnimations-0.3.oxt> (open this file with LibreOffice)
 
 Issue tracker: <https://github.com/monperrus/ExpandAnimations/issues>
 
