@@ -186,10 +186,6 @@ function getAnimatedShapes(slide as Object)
                     animNode = animNodes.nextElement()
                     if isVisibilityAnimation(animNode) then
                         target = animNode.target
-                        &#39;special handling for com.sun.star.presentation.ParagraphTarget
-                        if (IsUnoStruct(target)) then
-                           target = target.Shape
-                        end if
                         if not IsEmpty(target) then 
                           &#39; if we haven&#39;t seen this shape yet, add it to the array
                           if not containsObject(shapes, target) then
@@ -242,12 +238,12 @@ function getShapeVisibility(slide as Object, nFrames as Integer)
                              animNode = animNodes.nextElement()
                              if isVisibilityAnimation(animNode) then
                                 target = animNode.target
-                                &#39;special handling for com.sun.star.presentation.ParagraphTarget
-                                if (IsUnoStruct(target)) then
-                                   target = target.Shape
-                                end if
                                 &#39; if this is the shape we want, check the visibility
-                                if EqualUnoObjects(shape, target) then
+                                sameStruct = false
+                                if IsUnoStruct(target) AND IsUnoStruct(shape) then
+	                                sameStruct = EqualUnoObjects(shape.Shape, target.Shape) AND shape.Paragraph=target.Paragraph
+                                end if
+                                if EqualUnoObjects(shape, target) OR sameStruct then
                                     visCurrent = animNode.To
                                     &#39; if this is the first time we&#39;ve seen this
                                     &#39; shape, set the visibility on the previous frames
@@ -276,7 +272,25 @@ sub removeInvisibleShapes(slide as Object, visibility, frame as Integer)
      shapes = getAnimatedShapes(slide)
      for n = 0 to UBound(shapes)
         if visibility(n, frame) = false then
-            slide.remove(shapes(n))
+            &#39;special handling for com.sun.star.presentation.ParagraphTarget
+            if (IsUnoStruct(shapes(n))) then
+                shape=shapes(n).Shape
+                para = shapes(n).Paragraph
+                count = 0
+                eNum =  shape.createEnumeration
+                &#39; for each paragraph in textbox
+                Do while eNum.HasMoreElements()
+                    oAObj = eNum.nextElement()
+                    &#39; remove those whose index larger than shapes(n).Paragraph
+                    if count &gt;= para then
+                        oAObj.String = &quot;&quot;
+                        oAObj.NumberingIsNumber = false
+                    end if
+                    count = count + 1
+                Loop
+            else
+                slide.remove(shapes(n))
+            end if
         end if
     next
 end sub
