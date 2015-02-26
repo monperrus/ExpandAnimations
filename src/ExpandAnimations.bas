@@ -133,6 +133,7 @@ function expandDocument(doc as Object)
     ' go through pages in reverse order
     for i = numSlides-1 to 0 step -1
         slide = doc.drawPages(i)
+       	agordiGrandoDeTekstoj(slide)
         if hasAnimation(slide) then
             n = countAnimationSteps(slide)
             if n > 1 then
@@ -152,6 +153,58 @@ function expandDocument(doc as Object)
     
     ' saving the expanded version
   doc.store()
+
+end function
+
+
+' Agordi grando de tekstoj (The English language discriminate by country of birth)
+function agordiGrandoDeTekstoj(slide as Object)
+  Dim numObjektoj As Integer
+  Dim i As Integer
+  Dim objekto As Object
+  Dim eNum As Object
+  Dim oTipo As String
+  Dim oTeksto As Object
+  Dim oAlgxustigo As Integer
+  
+  numObjektoj = slide.getCount()
+  for i = 0 to numObjektoj-1
+    objekto = slide.getByIndex(i)
+    oTipo = objekto.GetShapeType()
+    if oTipo = "com.sun.star.drawing.CustomShape" then
+      objekto.TextAutoGrowWidth = false
+    end if
+    if oTipo = "com.sun.star.drawing.TextShape" then
+      oAlgxustigo = -1
+      eNum = objekto.Text.CreateEnumeration
+      while eNum.HasMoreElements
+        oTeksto = eNum.NextElement
+        ' Ĉu la ero estas alineo?
+        if oTeksto.SupportsService("com.sun.star.text.Paragraph") then
+          select case oTeksto.ParaAdjust
+            case 0
+          	  if oAlgxustigo = -1 then
+          	    oAlgxustigo = 0
+          	  end if
+          	case 1
+          	  oAlgxustigo = 2
+          	case 2,4
+          	  if oAlgxustigo < 1 then
+          	    oAlgxustigo = 3
+          	  end if
+          	case 3
+          	  if oAlgxustigo < 1 then
+          	    oAlgxustigo = 1
+          	  end if
+          end select
+        end if
+      wend
+      objekto.TextAutoGrowWidth = false
+      if oAlgxustigo > -1 then
+        objekto.TextHorizontalAdjust = oAlgxustigo
+      end if
+    end if
+  next
 
 end function
 
@@ -279,7 +332,7 @@ sub removeInvisibleShapes(slide as Object, visibility, frame as Integer)
                 Do while eNum.HasMoreElements()
                     oAObj = eNum.nextElement()
                     ' remove those whose index larger than shapes(n).Paragraph
-                    if count >= para then
+                    if count = para then
                         oAObj.String = ""
                         oAObj.NumberingIsNumber = false
                     end if
