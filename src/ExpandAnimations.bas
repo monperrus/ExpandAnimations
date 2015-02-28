@@ -165,7 +165,8 @@ function agordiGrandoDeTekstoj(slide as Object)
   Dim eNum As Object
   Dim oTipo As String
   Dim oTeksto As Object
-  Dim oAlgxustigo As Integer
+  Dim oAlghustigo As Integer
+  Dim io(5) As Integer
   
   numObjektoj = slide.getCount()
   for i = 0 to numObjektoj-1
@@ -175,33 +176,44 @@ function agordiGrandoDeTekstoj(slide as Object)
       objekto.TextAutoGrowWidth = false
     end if
     if oTipo = "com.sun.star.drawing.TextShape" then
-      oAlgxustigo = -1
+      oAlghustigo = -1
+      for kk = 0 to 4
+        io(kk) = 0
+      next
       eNum = objekto.Text.CreateEnumeration
       while eNum.HasMoreElements
         oTeksto = eNum.NextElement
         ' Ĉu la ero estas alineo?
         if oTeksto.SupportsService("com.sun.star.text.Paragraph") then
+          if oTeksto.ParaAdjust < 4 then
+            io(oTeksto.ParaAdjust) = 1
+          end if
           select case oTeksto.ParaAdjust
             case 0
-          	  if oAlgxustigo = -1 then
-          	    oAlgxustigo = 0
+          	  if oAlghustigo = -1 then
+          	    oAlghustigo = 0
           	  end if
           	case 1
-          	  oAlgxustigo = 2
+          	  oAlghustigo = 2
           	case 2,4
-          	  if oAlgxustigo < 1 then
-          	    oAlgxustigo = 3
+          	  if oAlghustigo < 1 then
+          	    oAlghustigo = 3
           	  end if
           	case 3
-          	  if oAlgxustigo < 1 then
-          	    oAlgxustigo = 1
+          	  if oAlghustigo < 1 then
+          	    oAlghustigo = 1
           	  end if
           end select
         end if
       wend
       objekto.TextAutoGrowWidth = false
-      if oAlgxustigo > -1 then
-        objekto.TextHorizontalAdjust = oAlgxustigo
+      ' TextHorizontalAdjust: maldekstra 0, centra 1, dekstra 2, kompleta 3
+      ' ParaAdjust: maldekstra 0, dekstra 1, kompleta 2, centra 3, kom lasta 4
+      if io(0)+io(1)+io(2)+io(3)+io(4) = 1 then
+        objekto.TextHorizontalAdjust = oAlghustigo
+      end if
+      if io(0)+io(1)+io(2)+io(3)+io(4) > 1 then
+        objekto.TextHorizontalAdjust = 3
       end if
     end if
   next
