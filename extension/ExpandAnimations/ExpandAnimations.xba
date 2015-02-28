@@ -169,6 +169,7 @@ function agordiGrandoDeTekstoj(slide as Object)
   Dim oTeksto As Object
   Dim oAlghustigo As Integer
   Dim io(5) As Integer
+  Dim kk As Integer
   
   numObjektoj = slide.getCount()
   for i = 0 to numObjektoj-1
@@ -192,19 +193,19 @@ function agordiGrandoDeTekstoj(slide as Object)
           end if
           select case oTeksto.ParaAdjust
             case 0
-          	  if oAlghustigo = -1 then
-          	    oAlghustigo = 0
-          	  end if
-          	case 1
-          	  oAlghustigo = 2
-          	case 2,4
-          	  if oAlghustigo &lt; 1 then
-          	    oAlghustigo = 3
-          	  end if
-          	case 3
-          	  if oAlghustigo &lt; 1 then
-          	    oAlghustigo = 1
-          	  end if
+              if oAlghustigo = -1 then
+                oAlghustigo = 0
+              end if
+            case 1
+              oAlghustigo = 2
+            case 2,4
+              if oAlghustigo &lt; 1 then
+                oAlghustigo = 3
+              end if
+            case 3
+              if oAlghustigo &lt; 1 then
+                oAlghustigo = 1
+              end if
           end select
         end if
       wend
