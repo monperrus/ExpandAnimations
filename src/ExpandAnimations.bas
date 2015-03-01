@@ -190,31 +190,32 @@ function agordiGrandoDeTekstoj(slide as Object)
             io(oTeksto.ParaAdjust) = 1
           end if
           select case oTeksto.ParaAdjust
-            case 0
+            case com.sun.star.style.ParagraphAdjust.LEFT
               if oAlghustigo = -1 then
-                oAlghustigo = 0
+                oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.LEFT
               end if
-            case 1
-              oAlghustigo = 2
-            case 2,4
+            case com.sun.star.style.ParagraphAdjust.RIGHT
+              oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.RIGHT
+            case com.sun.star.style.ParagraphAdjust.BLOCK , _
+                 com.sun.star.style.ParagraphAdjust.STRETCH
               if oAlghustigo < 1 then
-                oAlghustigo = 3
+                oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.BLOCK
               end if
-            case 3
+            case com.sun.star.style.ParagraphAdjust.CENTER
               if oAlghustigo < 1 then
-                oAlghustigo = 1
+                oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.CENTER
               end if
           end select
         end if
       wend
       objekto.TextAutoGrowWidth = false
-      ' TextHorizontalAdjust: maldekstra 0, centra 1, dekstra 2, kompleta 3
-      ' ParaAdjust: maldekstra 0, dekstra 1, kompleta 2, centra 3, kom lasta 4
+      ' TextHorizontalAdjust: LEFT 0, CENTER 1, RIGHT 2, BLOCK 3
+      ' ParaAdjust: LEFT 0, RIGHT 1, BLOCK 2, CENTER 3, STRETCH 4
       if io(0)+io(1)+io(2)+io(3)+io(4) = 1 then
         objekto.TextHorizontalAdjust = oAlghustigo
       end if
       if io(0)+io(1)+io(2)+io(3)+io(4) > 1 then
-        objekto.TextHorizontalAdjust = 3
+        objekto.TextHorizontalAdjust = com.sun.star.drawing.TextHorizontalAdjust.BLOCK
       end if
     end if
   next
