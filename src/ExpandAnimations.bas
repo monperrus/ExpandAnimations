@@ -1,3 +1,4 @@
+
 ' ExpandAnimations (https://github.com/monperrus/ExpandAnimations)
 
 ' Copyright 2009-2011 Matthew Neeley.
@@ -133,7 +134,7 @@ function expandDocument(doc as Object)
     ' go through pages in reverse order
     for i = numSlides-1 to 0 step -1
         slide = doc.drawPages(i)
-       	agordiGrandoDeTekstoj(slide)
+        agordiGrandoDeTekstoj(slide)
         if hasAnimation(slide) then
             n = countAnimationSteps(slide)
             if n > 1 then
@@ -159,67 +160,65 @@ end function
 
 ' Agordi grando de tekstoj (The English language discriminate by country of birth)
 function agordiGrandoDeTekstoj(slide as Object)
-  Dim numObjektoj As Integer
-  Dim i As Integer
-  Dim objekto As Object
-  Dim eNum As Object
-  Dim oTipo As String
-  Dim oTeksto As Object
-  Dim oAlghustigo As Integer
-  Dim io(5) As Integer
-  Dim kk As Integer
-  
-  numObjektoj = slide.getCount()
-  for i = 0 to numObjektoj-1
-    objekto = slide.getByIndex(i)
-    oTipo = objekto.GetShapeType()
-    if oTipo = "com.sun.star.drawing.CustomShape" then
-      objekto.TextAutoGrowWidth = false
-    end if
-    if oTipo = "com.sun.star.drawing.TextShape" then
-      oAlghustigo = -1
-      for kk = 0 to 4
-        io(kk) = 0
-      next
-      eNum = objekto.Text.CreateEnumeration
-      while eNum.HasMoreElements
-        oTeksto = eNum.NextElement
-        ' Ĉu la ero estas alineo?
-        if oTeksto.SupportsService("com.sun.star.text.Paragraph") then
-          if oTeksto.ParaAdjust < 4 then
-            io(oTeksto.ParaAdjust) = 1
-          end if
-          select case oTeksto.ParaAdjust
-            case com.sun.star.style.ParagraphAdjust.LEFT
-              if oAlghustigo = -1 then
-                oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.LEFT
-              end if
-            case com.sun.star.style.ParagraphAdjust.RIGHT
-              oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.RIGHT
-            case com.sun.star.style.ParagraphAdjust.BLOCK , _
-                 com.sun.star.style.ParagraphAdjust.STRETCH
-              if oAlghustigo < 1 then
-                oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.BLOCK
-              end if
-            case com.sun.star.style.ParagraphAdjust.CENTER
-              if oAlghustigo < 1 then
-                oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.CENTER
-              end if
-          end select
+    Dim numObjektoj As Integer
+    Dim i As Integer
+    Dim objekto As Object
+    Dim eNum As Object
+    Dim oTipo As String
+    Dim oTeksto As Object
+    Dim oAlghustigo As Integer
+    Dim io(5) As Integer
+    Dim kk As Integer
+    
+    numObjektoj = slide.getCount()
+    for i = 0 to numObjektoj-1
+        objekto = slide.getByIndex(i)
+        oTipo = objekto.GetShapeType()
+        if oTipo = "com.sun.star.drawing.CustomShape" then
+            objekto.TextAutoGrowWidth = false
         end if
-      wend
-      objekto.TextAutoGrowWidth = false
-      ' TextHorizontalAdjust: LEFT 0, CENTER 1, RIGHT 2, BLOCK 3
-      ' ParaAdjust: LEFT 0, RIGHT 1, BLOCK 2, CENTER 3, STRETCH 4
-      if io(0)+io(1)+io(2)+io(3)+io(4) = 1 then
-        objekto.TextHorizontalAdjust = oAlghustigo
-      end if
-      if io(0)+io(1)+io(2)+io(3)+io(4) > 1 then
-        objekto.TextHorizontalAdjust = com.sun.star.drawing.TextHorizontalAdjust.BLOCK
-      end if
-    end if
-  next
-
+        if oTipo = "com.sun.star.drawing.TextShape" then
+            oAlghustigo = -1
+            for kk = 0 to 4
+                io(kk) = 0
+            next
+            eNum = objekto.Text.CreateEnumeration
+            while eNum.HasMoreElements
+                oTeksto = eNum.NextElement
+                ' Chu la ero estas alineo?
+                if oTeksto.SupportsService("com.sun.star.text.Paragraph") then
+                    if oTeksto.ParaAdjust < 4 then
+                        io(oTeksto.ParaAdjust) = 1
+                    end if
+                    select case oTeksto.ParaAdjust
+                        case com.sun.star.style.ParagraphAdjust.LEFT
+                        if oAlghustigo = -1 then
+                            oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.LEFT
+                        end if
+                    case com.sun.star.style.ParagraphAdjust.RIGHT
+                        oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.RIGHT
+                    case com.sun.star.style.ParagraphAdjust.BLOCK, com.sun.star.style.ParagraphAdjust.STRETCH
+                        if oAlghustigo < 1 then
+                            oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.BLOCK
+                        end if
+                    case com.sun.star.style.ParagraphAdjust.CENTER
+                        if oAlghustigo < 1 then
+                            oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.CENTER
+                        end if
+                    end select
+                end if
+            wend
+            objekto.TextAutoGrowWidth = false
+            ' TextHorizontalAdjust: LEFT 0, CENTER 1, RIGHT 2, BLOCK 3
+            ' ParaAdjust: LEFT 0, RIGHT 1, BLOCK 2, CENTER 3, STRETCH 4
+            if io(0)+io(1)+io(2)+io(3)+io(4) = 1 then
+                objekto.TextHorizontalAdjust = oAlghustigo
+            end if
+            if io(0)+io(1)+io(2)+io(3)+io(4) > 1 then
+                objekto.TextHorizontalAdjust = com.sun.star.drawing.TextHorizontalAdjust.BLOCK
+            end if
+        end if
+    next
 end function
 
 
