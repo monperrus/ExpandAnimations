@@ -135,7 +135,7 @@ function expandDocument(doc as Object)
         slide = doc.drawPages(i)
         if hasAnimation(slide) then
             n = countAnimationSteps(slide)
-            if n > 1 then
+            if n > 1 and not somethingWrong(slide) then
                 origName = slide.Name
                 replicateSlide(doc, slide, n)
                 visArray = getShapeVisibility(slide, n)
@@ -155,6 +155,14 @@ function expandDocument(doc as Object)
 
 end function
 
+function somethingWrong( slide as Object )
+    shapes = getAnimatedShapes(slide)
+    if UBound(shapes) = -1 then
+      somethingWrong = true
+    else
+      somethingWrong = false
+    end if
+end function
 
 ' get a list of all shapes whose visibility is changed during the animation
 function getAnimatedShapes(slide as Object)
