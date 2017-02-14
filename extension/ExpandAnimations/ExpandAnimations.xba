@@ -136,6 +136,7 @@ function expandDocument(doc as Object)
     &#39; go through pages in reverse order
     for i = numSlides-1 to 0 step -1
         slide = doc.drawPages(i)
+        agordiGrandoDeTekstoj(slide)
         if hasAnimation(slide) then
             n = countAnimationSteps(slide)
             if n &gt; 1 then
@@ -156,6 +157,121 @@ function expandDocument(doc as Object)
     &#39; saving the expanded version
   doc.store()
 
+end function
+
+
+&#39; Agordi grando de tekstoj (The English language discriminate by country of birth)
+function agordiGrandoDeTekstoj(slide as Object)
+  Dim numObjektoj As Integer
+  Dim i As Integer
+  Dim objekto As Object
+  Dim eNum As Object
+  Dim oTipo As String
+  Dim oTeksto As Object
+  Dim oAlghustigo As Integer
+  Dim io(5) As Integer
+  Dim oGrando &#39; Grando de objekto
+  Dim oDuaGrando &#39; Grando de objekto
+  Dim oLoko &#39; Loko de objekto
+  Dim oNombriloDeAlineo As Integer
+    
+  numObjektoj = slide.getCount()
+  for i = 0 to numObjektoj-1
+    objekto = slide.getByIndex(i)
+    oTipo = objekto.GetShapeType()
+    if oTipo = &quot;com.sun.star.drawing.CustomShape&quot; then
+      objekto.TextAutoGrowWidth = false
+    end if
+    if oTipo = &quot;com.sun.star.drawing.TextShape&quot; then
+      oAlghustigo = -1
+      for oAlghustigo = 0 to 4
+        io(oAlghustigo) = 0
+      next
+      oLargho = 0
+      oNombriloDeAlineo = 0
+      eNum = objekto.Text.CreateEnumeration
+      while eNum.HasMoreElements
+        oTeksto = eNum.NextElement
+        &#39; Chu la ero estas alineo?
+        if oTeksto.SupportsService(&quot;com.sun.star.text.Paragraph&quot;) then
+          oNombriloDeAlineo = oNombriloDeAlineo + 1
+          if oTeksto.ParaAdjust &lt; 4 then
+            io(oTeksto.ParaAdjust) = 1
+          end if
+          select case oTeksto.ParaAdjust
+            case com.sun.star.style.ParagraphAdjust.LEFT
+              if oAlghustigo = -1 then
+                oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.LEFT
+              end if
+            case com.sun.star.style.ParagraphAdjust.RIGHT
+              oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.RIGHT
+            case com.sun.star.style.ParagraphAdjust.BLOCK, com.sun.star.style.ParagraphAdjust.STRETCH
+              if oAlghustigo &lt; 1 then
+                oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.BLOCK
+              end if
+            case com.sun.star.style.ParagraphAdjust.CENTER
+              if oAlghustigo &lt; 1 then
+                oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.CENTER
+              end if
+          end select
+        end if
+      wend
+      if oNombriloDeAlineo &gt; 1 then
+        &#39; com.sun.star.drawing.
+        &#39; TextHorizontalAdjust: LEFT 0, CENTER 1, RIGHT 2, BLOCK 3
+        &#39; TextVerticalAdjust: TOP 0, CENTER 1, BOTTOM 2, BLOCK 3
+        &#39; com.sun.star.style.ParagraphAdjust.
+        &#39; ParaAdjust: LEFT 0, RIGHT 1, BLOCK 2, CENTER 3, STRETCH 4
+        if objekto.RotateAngle = 0 then
+          oGrando = objekto.getSize()
+          oLoko = objekto.getPosition()
+          objekto.TextAutoGrowWidth = true
+          if objekto.FrameRect.Width &lt; oGrando.Width then
+            if io(0)+io(1)+io(2)+io(3)+io(4) = 1 then
+              if oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.CENTER then
+                oLoko.X = oLoko.X + (oGrando.Width - objekto.FrameRect.Width)/2
+              end if
+              if oAlghustigo = com.sun.star.drawing.TextHorizontalAdjust.RIGHT then
+                oLoko.X = oLoko.X + (oGrando.Width - objekto.FrameRect.Width)
+              end if
+            else
+              if objekto.TextHorizontalAdjust = com.sun.star.drawing.TextHorizontalAdjust.CENTER then
+                oLoko.X = oLoko.X + (oGrando.Width - objekto.FrameRect.Width)/2
+              end if
+              if objekto.TextHorizontalAdjust = com.sun.star.drawing.TextHorizontalAdjust.RIGHT then
+                oLoko.X = oLoko.X + (oGrando.Width - objekto.FrameRect.Width)
+              end if
+            end if
+            oGrando.Width = objekto.FrameRect.Width
+          end if
+          oDuaGrando = objekto.getSize()
+          oDuaGrando.Height = 2
+          objekto.setSize(oDuaGrando)
+          objekto.TextAutoGrowHeight = true
+          if objekto.FrameRect.Height &lt; oGrando.Height then
+            if objekto.TextVerticalAdjust = com.sun.star.drawing.TextVerticalAdjust.CENTER then
+              oLoko.Y = oLoko.Y + (oGrando.Height - objekto.FrameRect.Height)/2
+            end if &#39;TOP, CENTER, BOTTOM, BLOCK
+            if objekto.TextVerticalAdjust = com.sun.star.drawing.TextVerticalAdjust.BOTTOM then
+              oLoko.Y = oLoko.Y + (oGrando.Height - objekto.FrameRect.Height)
+            end if
+            oGrando.Height = objekto.FrameRect.Height
+          end if
+          objekto.TextAutoGrowHeight = false
+          objekto.TextAutoGrowWidth = false
+          objekto.setSize(oGrando)
+          objekto.setPosition(oLoko)
+          objekto.TextVerticalAdjust = com.sun.star.drawing.TextVerticalAdjust.BLOCK
+        end if
+        if io(0)+io(1)+io(2)+io(3)+io(4) = 1 then
+          objekto.TextHorizontalAdjust = oAlghustigo
+        end if
+        if io(0)+io(1)+io(2)+io(3)+io(4) &gt; 1 then
+          objekto.TextHorizontalAdjust = com.sun.star.drawing.TextHorizontalAdjust.BLOCK
+        end if
+      end if
+    end if
+  next
 end function
 
 
@@ -282,7 +398,7 @@ sub removeInvisibleShapes(slide as Object, visibility, frame as Integer)
                 Do while eNum.HasMoreElements()
                     oAObj = eNum.nextElement()
                     &#39; remove those whose index larger than shapes(n).Paragraph
-                    if count &gt;= para then
+                    if count = para then
                         oAObj.String = &quot;&quot;
                         oAObj.NumberingIsNumber = false
                     end if
