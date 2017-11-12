@@ -212,63 +212,67 @@ end function
 ' shape for each frame in the expanded animation
 function getShapeVisibility(slide as Object, nFrames as Integer)
      shapes = getAnimatedShapes(slide)
-     dim visibility(UBound(shapes), nFrames-1) as Boolean
-     
-     ' loop over all animated shapes
-     for n = 0 to UBound(shapes)
-         shape = shapes(n)
-         visKnown = false
-         visCurrent = false
-     
-         ' iterate over the animations for this slide,
-         ' looking for those that change the visibility
-         ' of the current shape
-         mainSequence = getMainSequence(slide)
-        if HasUnoInterfaces(mainSequence, ENUMACCESS) then            
-            clickNodes = mainSequence.createEnumeration()
-            currentFrame = 0
-            while clickNodes.hasMoreElements()
-                clickNode = clickNodes.nextElement()
-     
-                groupNodes = clickNode.createEnumeration()
-                while groupNodes.hasMoreElements()
-                    groupNode = groupNodes.nextElement()
-     
-                    effectNodes = groupNode.createEnumeration()
-                    while effectNodes.hasMoreElements()
-                        effectNode = effectNodes.nextElement()
-     
-                         animNodes = effectNode.createEnumeration()
-                         while animNodes.hasMoreElements()
-                             animNode = animNodes.nextElement()
-                             if isVisibilityAnimation(animNode) then
-                                target = animNode.target
-                                ' if this is the shape we want, check the visibility
-                                sameStruct = false
-                                if IsUnoStruct(target) AND IsUnoStruct(shape) then
-	                                sameStruct = EqualUnoObjects(shape.Shape, target.Shape) AND shape.Paragraph=target.Paragraph
-                                end if
-                                if EqualUnoObjects(shape, target) OR sameStruct then
-                                    visCurrent = animNode.To
-                                    ' if this is the first time we've seen this
-                                    ' shape, set the visibility on the previous frames
-                                    if visKnown = false then
-                                        for i = 0 to currentFrame
-                                            visibility(n, i) = not visCurrent
-                                        next
-                                        visKnown = true
+     if UBound(shapes) < 1 then
+     	getShapeVisibility = 0
+     else
+         dim visibility(UBound(shapes), nFrames-1) as Boolean
+         
+         ' loop over all animated shapes
+         for n = 0 to UBound(shapes)
+             shape = shapes(n)
+             visKnown = false
+             visCurrent = false
+         
+             ' iterate over the animations for this slide,
+             ' looking for those that change the visibility
+             ' of the current shape
+             mainSequence = getMainSequence(slide)
+            if HasUnoInterfaces(mainSequence, ENUMACCESS) then            
+                clickNodes = mainSequence.createEnumeration()
+                currentFrame = 0
+                while clickNodes.hasMoreElements()
+                    clickNode = clickNodes.nextElement()
+         
+                    groupNodes = clickNode.createEnumeration()
+                    while groupNodes.hasMoreElements()
+                        groupNode = groupNodes.nextElement()
+         
+                        effectNodes = groupNode.createEnumeration()
+                        while effectNodes.hasMoreElements()
+                            effectNode = effectNodes.nextElement()
+         
+                             animNodes = effectNode.createEnumeration()
+                             while animNodes.hasMoreElements()
+                                 animNode = animNodes.nextElement()
+                                 if isVisibilityAnimation(animNode) then
+                                    target = animNode.target
+                                    ' if this is the shape we want, check the visibility
+                                    sameStruct = false
+                                    if IsUnoStruct(target) AND IsUnoStruct(shape) then
+                                        sameStruct = EqualUnoObjects(shape.Shape, target.Shape) AND shape.Paragraph=target.Paragraph
                                     end if
-                                end if
-                             end if
+                                    if EqualUnoObjects(shape, target) OR sameStruct then
+                                        visCurrent = animNode.To
+                                        ' if this is the first time we've seen this
+                                        ' shape, set the visibility on the previous frames
+                                        if visKnown = false then
+                                            for i = 0 to currentFrame
+                                                visibility(n, i) = not visCurrent
+                                            next
+                                            visKnown = true
+                                        end if
+                                    end if
+                                 end if
+                             wend
                          wend
-                     wend
+                    wend
+                    currentFrame = currentFrame + 1
+                    visibility(n, currentFrame) = visCurrent
                 wend
-                currentFrame = currentFrame + 1
-                visibility(n, currentFrame) = visCurrent
-            wend
-        end if
-    next
-    getShapeVisibility = visibility
+            end if
+        next
+        getShapeVisibility = visibility
+    end if
 end function
 
 
@@ -303,8 +307,11 @@ end sub
 
 ' checks if the given animation node changes a shape's visibility
 function isVisibilityAnimation(animNode as Object) as Boolean
+    On Error GoTo ErrorHandler
     isVisibilityAnimation = HasUnoInterfaces(animNode, ANIMSET) and _
                             (animNode.AttributeName = VISATTR)
+    ErrorHandler:
+    isVivibilityAnimation = False
 end function
 
 
