@@ -1,6 +1,3 @@
-ExpandAnimations
-=================
-
 ExpandAnimations is a LibreOffice/OpenOffice.org extension to expand animations before exporting to PDF. The extension adds a menu entry "Tools>>Add-ons>>Expand animations" in Impress. The generated PDF file is in the same folder as the source document.
 
 **We are looking for contributors, knowledgeable in Basic, see [issue list](https://github.com/monperrus/ExpandAnimations/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc) :)** 
