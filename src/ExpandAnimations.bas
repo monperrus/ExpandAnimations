@@ -46,6 +46,14 @@ end sub
 
 ' expands the animations and exports to PDF
 function expandAnimations(doc as Object)
+  If Not BasicLibraries.isLibraryLoaded("Tools") then
+     BasicLibraries.loadLibrary("Tools")
+  Endif
+
+  sDocUrl = doc.getURL()
+  sDocPath = DirectoryNameoutofPath(sDocUrl, "/")
+  sDocFileNameWithoutExtension = GetFileNameWithoutExtension(sDocUrl, "/")
+  newUrlPdf = sDocPath + "/" + sDocFileNameWithoutExtension + ".pdf"
 
   ' rename the document
   docExpanded = renameAsExpanded(doc)
@@ -62,16 +70,15 @@ function expandAnimations(doc as Object)
   exportToPDF(docExpanded, newUrlPdf)
   oStatusBar.end()
 
-  ' returns the PDF file name
-  expandAnimations = exportToPDF(docExpanded)
+  ' return the PDF file name
+  expandAnimations = newUrlPdf
   
   ' closing the expanded version  
   docExpanded.close(false)
-  
 end function
 
 
-' renames the current document
+' saves the (current) document with a new file name
 ' e.g. test.odp -> test-expanded.odp
 function renameAsExpanded(doc as Object)
   Dim Dummy()
@@ -81,15 +88,12 @@ function renameAsExpanded(doc as Object)
   Endif
 
   sDocUrl = doc.getURL()
-  sDocPath = DirectoryNameoutofPath(sDocUrl, "/")
-  sDocFileName = FileNameoutofPath(sDocUrl, "/")
-  sDocFileNameExtension = GetFileNameExtension(sDocUrl)
   sDocFileNameWithoutExtension = GetFileNameWithoutExtension(sDocUrl, "/") 
-  
-  newUrlExpanded = sDocPath + "/" + sDocFileNameWithoutExtension + "-expanded.odp"
+
+  newUrlExpanded = "file:///tmp/" + sDocFileNameWithoutExtension + "-expanded.odp"
   doc.storeToUrl(newUrlExpanded, Array())
   
-  ' reloading the old document
+  ' reloading the saved document
   expandedDoc = StarDesktop.loadComponentFromURL(newUrlExpanded, "_default", 0, Dummy)  
   
   renameAsExpanded = expandedDoc
@@ -97,23 +101,11 @@ end function
 
 
 ' exports to PDF
-function exportToPDF(doc as Object)
-  If Not BasicLibraries.isLibraryLoaded("Tools") then
-     BasicLibraries.loadLibrary("Tools")
-  Endif
-
-  sDocUrl = doc.getURL()
-  sDocPath = DirectoryNameoutofPath(sDocUrl, "/")
-  sDocFileName = FileNameoutofPath(sDocUrl, "/")
-  sDocFileNameExtension = GetFileNameExtension(sDocUrl)
-  sDocFileNameWithoutExtension = GetFileNameWithoutExtension(sDocUrl, "/") 
-
-  newUrlPdf = sDocPath + "/" + sDocFileNameWithoutExtension + ".pdf"
+sub exportToPDF(doc as Object, newUrlPdf as String)
   ' we use storeToUrl because we don't want to load the PDF
   ' actually we have to, otherwise, there is an error
   doc.storeToUrl(newUrlPdf, Array(makePropertyValue("FilterName", "impress_pdf_Export")))
-  exportToPDF = newUrlPdf
-end function 
+end sub
 
 
 
