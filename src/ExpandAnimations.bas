@@ -49,13 +49,21 @@ function expandAnimations(doc as Object)
 
   ' rename the document
   docExpanded = renameAsExpanded(doc)
-  
+
   ' expand it
-  expandDocument(docExpanded)
+  numSlides = doc.getDrawPages().getCount()
+  oStatusBar = ThisComponent.getCurrentController.StatusIndicator
+  oStatusBar.start("Expanding Slides", numSlides)
+  expandDocument(docExpanded, oStatusBar)
   
   ' export to PDF
+  oStatusBar.setText("Exporting to PDF")
+  oStatusBar.setValue(numSlides)
+  exportToPDF(docExpanded, newUrlPdf)
+  oStatusBar.end()
+
   ' returns the PDF file name
-  expandAnimations= exportToPDF(docExpanded)  
+  expandAnimations = exportToPDF(docExpanded)
   
   ' closing the expanded version  
   docExpanded.close(false)
@@ -123,16 +131,17 @@ Function makePropertyValue( Optional cName As String, Optional uValue ) As com.s
 End Function 
 
 
-function expandDocument(doc as Object)
+function expandDocument(doc as Object, oStatusBar as Object)
     ANIMSET = "com.sun.star.animations.XAnimateSet"
     ENUMACCESS = "com.sun.star.container.XEnumerationAccess"
     VISATTR = "Visibility"
     
     numSlides = doc.getDrawPages().getCount()
-        
+
     ' go through pages in reverse order
     for i = numSlides-1 to 0 step -1
         slide = doc.drawPages(i)
+        oStatusBar.setValue(numSlides-i)
         if hasAnimation(slide) then
             n = countAnimationSteps(slide)
             if n > 1 and not somethingWrong(slide) then
@@ -147,6 +156,7 @@ function expandDocument(doc as Object)
             end if
         end if
     next
+
     finalSlides = doc.getDrawPages().getCount()
     'MsgBox("Done! Expanded " & CStr(numSlides) & " slides to " & CStr(finalSlides) & ".")
     

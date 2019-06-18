@@ -52,11 +52,19 @@ function expandAnimations(doc as Object)
 
   &#39; rename the document
   docExpanded = renameAsExpanded(doc)
-  
+
   &#39; expand it
-  expandDocument(docExpanded)
+  numSlides = doc.getDrawPages().getCount()
+  oStatusBar = ThisComponent.getCurrentController.StatusIndicator
+  oStatusBar.start(&quot;Expanding Slides&quot;, numSlides)
+  expandDocument(docExpanded, oStatusBar)
   
   &#39; export to PDF
+  oStatusBar.setText(&quot;Exporting to PDF&quot;)
+  oStatusBar.setValue(numSlides)
+  exportToPDF(docExpanded, newUrlPdf)
+  oStatusBar.end()
+
   &#39; returns the PDF file name
   expandAnimations= exportToPDF(docExpanded)  
   
@@ -126,19 +134,20 @@ Function makePropertyValue( Optional cName As String, Optional uValue ) As com.s
 End Function 
 
 
-function expandDocument(doc as Object)
+function expandDocument(doc as Object, oStatusBar as Object)
     ANIMSET = &quot;com.sun.star.animations.XAnimateSet&quot;
     ENUMACCESS = &quot;com.sun.star.container.XEnumerationAccess&quot;
     VISATTR = &quot;Visibility&quot;
     
     numSlides = doc.getDrawPages().getCount()
-        
+
     &#39; go through pages in reverse order
     for i = numSlides-1 to 0 step -1
         slide = doc.drawPages(i)
+        oStatusBar.setValue(numSlides-i)
         if hasAnimation(slide) then
             n = countAnimationSteps(slide)
-            if n &gt; 1 then
+            if n &gt; 1 and not somethingWrong(slide) then
                 origName = slide.Name
                 replicateSlide(doc, slide, n)
                 visArray = getShapeVisibility(slide, n)
@@ -150,6 +159,7 @@ function expandDocument(doc as Object)
             end if
         end if
     next
+
     finalSlides = doc.getDrawPages().getCount()
     &#39;MsgBox(&quot;Done! Expanded &quot; &amp; CStr(numSlides) &amp; &quot; slides to &quot; &amp; CStr(finalSlides) &amp; &quot;.&quot;)
     
@@ -158,6 +168,14 @@ function expandDocument(doc as Object)
 
 end function
 
+function somethingWrong( slide as Object )
+    shapes = getAnimatedShapes(slide)
+    if UBound(shapes) = -1 then
+      somethingWrong = true
+    else
+      somethingWrong = false
+    end if
+end function
 
 &#39; get a list of all shapes whose visibility is changed during the animation
 function getAnimatedShapes(slide as Object)
@@ -298,6 +316,8 @@ end sub
 
 &#39; checks if the given animation node changes a shape&#39;s visibility
 function isVisibilityAnimation(animNode as Object) as Boolean
+    On Error Resume Next
+    isVivibilityAnimation = False
     isVisibilityAnimation = HasUnoInterfaces(animNode, ANIMSET) and _
                             (animNode.AttributeName = VISATTR)
 end function
