@@ -303,6 +303,8 @@ end sub
 
 ' checks if the given animation node changes a shape's visibility
 function isVisibilityAnimation(animNode as Object) as Boolean
+    On Error Resume Next
+    isVivibilityAnimation = False
     isVisibilityAnimation = HasUnoInterfaces(animNode, ANIMSET) and _
                             (animNode.AttributeName = VISATTR)
 end function
