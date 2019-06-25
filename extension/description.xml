@@ -5,7 +5,7 @@
  xmlns:xlink="http://www.w3.org/1999/xlink">
 	<identifier value="vnd.basicaddonbuilder.expandanimations"/>
 	
-	<version value="0.4"/>
+	<version value="0.5"/>
 	<!-- <dependencies>
 		<OpenOffice.org-minimal-version value="2.1" dep:name="OpenOffice.org 2.1"/>
 	</dependencies> -->
