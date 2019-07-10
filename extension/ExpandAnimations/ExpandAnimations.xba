@@ -93,7 +93,12 @@ function renameAsExpanded(doc as Object)
   sDocUrl = doc.getURL()
   sDocFileNameWithoutExtension = GetFileNameWithoutExtension(sDocUrl, &quot;/&quot;) 
 
-  newUrlExpanded = &quot;file:///tmp/&quot; + sDocFileNameWithoutExtension + &quot;-expanded.odp&quot;
+  sTemp = Replace(Environ(&quot;TEMP&quot;), &quot;\&quot;, &quot;/&quot;)
+  If sTemp = &quot;&quot; Then
+    sTemp=&quot;/tmp&quot;
+  EndIf
+
+  newUrlExpanded = &quot;file:///&quot; + sTemp + &quot;/&quot; + sDocFileNameWithoutExtension + &quot;-expanded.odp&quot;
   doc.storeToUrl(newUrlExpanded, Array())
   
   &#39; reloading the saved document
