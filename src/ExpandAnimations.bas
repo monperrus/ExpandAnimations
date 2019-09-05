@@ -138,6 +138,23 @@ function expandDocument(doc as Object, oStatusBar as Object)
     ' go through pages in reverse order
     for i = numSlides-1 to 0 step -1
         slide = doc.drawPages(i)
+        master = slide.MasterPage
+        shapeCount = master.getCount()
+        for shapeNr = 0 to shapeCount-1
+            shape = master.getByIndex(shapeNr)
+            shapeType = shape.getShapeType()
+            if shapeType = "com.sun.star.presentation.SlideNumberShape" then
+                copy = doc.createInstance("com.sun.star.drawing.TextShape")
+                'Call Tools.WritedbgInfo(shape)
+                slide.add(copy)
+                copy.setString("" & (i+1) & " / " & numSlides)
+                copy.Style = shape.Style
+                copy.Text.Style = shape.Text.Style
+                copy.Position = shape.Position
+                copy.Size = shape.Size
+                copy.TextVerticalAdjust = shape.TextVerticalAdjust
+            end if
+        next
         oStatusBar.setValue(numSlides-i)
         if hasAnimation(slide) then
             n = countAnimationSteps(slide)
