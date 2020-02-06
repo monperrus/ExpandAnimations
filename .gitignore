@@ -1,0 +1,4 @@
+**/ExpandAnimations.xba
+test/*.txt
+test/test-ExpandAnimations.pdf
+dist/*-Snapshot.oxt

@@ -34,14 +34,12 @@ sub Main
   msgbox "Expansion done! See "+newUrlPdf
 end sub
 
-' tests the module on /tmp/test.odp
+' tests the module
 ' can be called on the command line with
-' $ libreoffice "macro:///ExpandAnimations.ExpandAnimations.test"
+' $ libreoffice ${pathToTestFile} "macro:///ExpandAnimations.ExpandAnimations.test"
 sub test
-  Dim Dummy()
-  Url = "file:///home/martin/test-ExpandAnimations.odp"
-  StarDesktop.loadComponentFromURL(Url, "_default", 0, Dummy)
   Main
+  StarDesktop.terminate
 end sub
 
 ' expands the animations and exports to PDF
