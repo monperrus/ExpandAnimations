@@ -1,0 +1,75 @@
+name: CI and CD
+
+on: [push, pull_request]
+
+jobs:
+  ci:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install LibreOffice
+      run: sudo apt-get install libreoffice-impress xmlstarlet poppler-utils
+    - name: Build Extension
+      run: make
+    - name: Install Extension
+      run: make install
+    - name: Test Extension
+      run: make test
+
+
+  cd:
+    if: github.event_name == 'push' && endsWith(github.ref, '/master')
+
+    needs: ci
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      run: sudo apt-get install xmlstarlet
+    - name: Build Extension
+      run: make
+    - name: Set Version
+      run: |
+          version=`xmlstarlet sel -N oo="http://openoffice.org/extensions/description/2006" -t -v "//oo:version/@value" extension/description.xml`
+          echo ::set-env name=VERSION::$version
+    - name: Create GitHub Releases
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
+      with:
+        tag_name: ${{ env.VERSION }}
+        release_name: Release ${{ env.VERSION }}
+        # Uncomment if some release notes are available
+        #body: |
+        #  Changes in this Release
+        #  - First Change
+        #  - Second Change
+        draft: false
+        prerelease: false
+    - name: Post Extension to GitHub Releases
+      id: upload-release-asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+        asset_path: ./dist/ExpandAnimations-${{ env.VERSION }}.oxt
+        asset_name: ExpandAnimations-${{ env.VERSION }}.oxt
+        asset_content_type: application/zip
+    - name: Increase Version
+      run: ./increase-version.sh
+    - name: Commit Git Changes
+      run: |
+        git config --global user.email "versionbot@expandanimations.local"
+        git config --global user.name "Version Bot"
+        git add extension/description.xml
+        git commit -m "Extension version updated"
+    - name: Push Git Changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
