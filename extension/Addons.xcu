@@ -24,5 +24,27 @@
 					</prop>
 				</node>
 		</node>
+
+		<node oor:name="OfficeNotebookBar">
+		    	<node oor:name="ExpandAnimations.OfficeNotebookBar" oor:op="replace">
+		            <node oor:name="m001" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.presentation.PresentationDocument</value>
+					</prop>
+					<prop oor:name="URL" oor:type="xs:string">
+						<value>vnd.sun.star.script:ExpandAnimations.ExpandAnimations.Main?language=Basic&amp;location=application</value>
+					</prop>
+					<prop oor:name="ImageIdentifier" oor:type="xs:string">
+						<value>%origin%/icons/image1</value>
+					</prop>
+					<prop oor:name="Title" oor:type="xs:string">
+						<value>Expand animations</value>
+					</prop>
+					<prop oor:name="Target" oor:type="xs:string">
+						<value>_self</value>
+					</prop>
+				</node>
+		    	</node>
+		</node>
 	</node>
 </oor:component-data>
