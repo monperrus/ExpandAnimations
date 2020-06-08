@@ -2,14 +2,15 @@
 set -e
 pdftotext "test/test-ExpandAnimations.pdf"
 pdftotext "test/test-ExpandAnimationsReference.pdf"
-diff_files=$(diff test/test-ExpandAnimations.txt test/test-ExpandAnimationsReference.txt)
-if [ "$diff_files" = "" ]; then
+set +e
+diff_res=$(diff test/test-ExpandAnimations.txt test/test-ExpandAnimationsReference.txt)
+diff_return=$?
+if [ $diff_return -eq 0 ]; then
     echo "The content of the pdfs is equal!"
     exit 0
 else
     echo "The content of the pdfs is different!"
-    echo "$diff_files"
+    echo "Result of diff:"
+    echo "$diff_res"
     exit 1
 fi
-
-
