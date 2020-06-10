@@ -3,9 +3,9 @@
 EXTENSIONNAME=ExpandAnimations
 VERSION=$(shell xmlstarlet sel -N oo="http://openoffice.org/extensions/description/2006" -t -v "//oo:version/@value" extension/description.xml)
 
-all: dist/$(EXTENSIONNAME)-$(VERSION).oxt extension/ExpandAnimations/ExpandAnimations.xba
+all: dist/$(EXTENSIONNAME)-$(VERSION).oxt
 
-dist/$(EXTENSIONNAME)-$(VERSION).oxt: $(shell find extension)
+dist/$(EXTENSIONNAME)-$(VERSION).oxt: extension/ExpandAnimations/ExpandAnimations.xba
 	cd extension; zip -r ../$@ .
 
 extension/ExpandAnimations/ExpandAnimations.xba: src/ExpandAnimations.bas
@@ -26,6 +26,7 @@ test: uninstall install
 	bash pdf-diff.sh
 
 clean:
+	rm -f extension/ExpandAnimations/ExpandAnimations.xba
 	rm -f test/test-ExpandAnimations.pdf
 	rm -f test/*.txt
 	rm -f test/.~lock*
