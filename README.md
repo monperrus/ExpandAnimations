@@ -5,7 +5,7 @@ ExpandAnimations is a LibreOffice/OpenOffice.org extension to expand animations 
 Usage
 -------
 
-Download: see latest file at <https://github.com/monperrus/ExpandAnimations/tree/master/dist> (open this file with LibreOffice)
+Download: see latest file at <https://github.com/monperrus/ExpandAnimations/releases> (open the OXT file with LibreOffice)
 
 Issue tracker: <https://github.com/monperrus/ExpandAnimations/issues>
 
