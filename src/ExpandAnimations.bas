@@ -181,9 +181,12 @@ function fixateSlideNumber(doc as Object, slide as Object, slideNr as Integer, s
             copy.setString(CStr(slideNr) & " / " & CStr(slideCount))
             copy.Style = shape.Style
             copy.Text.Style = shape.Text.Style
+            copy.Text.CharHeight = shape.Text.CharHeight
+            copy.Text.CharFontFamily = shape.Text.CharFontFamily
             copy.Position = shape.Position
             copy.Size = shape.Size
             copy.TextVerticalAdjust = shape.TextVerticalAdjust
+            copy.TextHorizontalAdjust = com.sun.star.drawing.TextHorizontalAdjust.RIGHT
         end if
     next
 end function
