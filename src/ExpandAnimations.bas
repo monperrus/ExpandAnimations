@@ -221,22 +221,23 @@ function getAnimatedShapes(slide as Object)
             effectNodes = groupNode.createEnumeration()
             while effectNodes.hasMoreElements()
                 effectNode = effectNodes.nextElement()
-
-                animNodes = effectNode.createEnumeration()
-                while animNodes.hasMoreElements()
-                    animNode = animNodes.nextElement()
-                    if isVisibilityAnimation(animNode) then
-                        target = animNode.target
-                        if not IsEmpty(target) then 
-                          ' if we haven't seen this shape yet, add it to the array
-                          if not containsObject(shapes, target) then
-                            newUBound = UBound(shapes) + 1
-                            reDim preserve shapes(newUBound)
-                            shapes(newUBound) = target
+                if HasUnoInterfaces(effectNode, ENUMACCESS) then
+                  animNodes = effectNode.createEnumeration()
+                  while animNodes.hasMoreElements()
+                      animNode = animNodes.nextElement()
+                      if isVisibilityAnimation(animNode) then
+                          target = animNode.target
+                          if not IsEmpty(target) then
+                            ' if we haven't seen this shape yet, add it to the array
+                              if not containsObject(shapes, target) then
+                                  newUBound = UBound(shapes) + 1
+                                  reDim preserve shapes(newUBound)
+                                  shapes(newUBound) = target
+                              end if
                           end if
-                        end if
-                     end if
-                 wend
+                      end if
+                  wend
+              end if
             wend
         wend
     wend
@@ -273,30 +274,31 @@ function getShapeVisibility(slide as Object, nFrames as Integer)
                     effectNodes = groupNode.createEnumeration()
                     while effectNodes.hasMoreElements()
                         effectNode = effectNodes.nextElement()
-     
-                         animNodes = effectNode.createEnumeration()
-                         while animNodes.hasMoreElements()
-                             animNode = animNodes.nextElement()
-                             if isVisibilityAnimation(animNode) then
-                                target = animNode.target
-                                ' if this is the shape we want, check the visibility
-                                sameStruct = false
-                                if IsUnoStruct(target) AND IsUnoStruct(shape) then
-	                                sameStruct = EqualUnoObjects(shape.Shape, target.Shape) AND shape.Paragraph=target.Paragraph
-                                end if
-                                if EqualUnoObjects(shape, target) OR sameStruct then
-                                    visCurrent = animNode.To
-                                    ' if this is the first time we've seen this
-                                    ' shape, set the visibility on the previous frames
-                                    if visKnown = false then
-                                        for i = 0 to currentFrame
-                                            visibility(n, i) = not visCurrent
-                                        next
-                                        visKnown = true
-                                    end if
-                                end if
-                             end if
-                         wend
+                         if HasUnoInterfaces(effectNode, ENUMACCESS) then
+                           animNodes = effectNode.createEnumeration()
+                           while animNodes.hasMoreElements()
+                               animNode = animNodes.nextElement()
+                               if isVisibilityAnimation(animNode) then
+                                  target = animNode.target
+                                  ' if this is the shape we want, check the visibility
+                                  sameStruct = false
+                                  if IsUnoStruct(target) AND IsUnoStruct(shape) then
+                                    sameStruct = EqualUnoObjects(shape.Shape, target.Shape) AND shape.Paragraph=target.Paragraph
+                                  end if
+                                  if EqualUnoObjects(shape, target) OR sameStruct then
+                                      visCurrent = animNode.To
+                                      ' if this is the first time we've seen this
+                                      ' shape, set the visibility on the previous frames
+                                      if visKnown = false then
+                                          for i = 0 to currentFrame
+                                              visibility(n, i) = not visCurrent
+                                          next
+                                          visKnown = true
+                                      end if
+                                  end if
+                               end if
+                           wend
+                       end if
                      wend
                 wend
                 currentFrame = currentFrame + 1
