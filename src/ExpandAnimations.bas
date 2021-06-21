@@ -183,6 +183,8 @@ function fixateSlideNumber(doc as Object, slide as Object, slideNr as Integer, s
             copy.Text.Style = shape.Text.Style
             copy.Text.CharHeight = shape.Text.CharHeight
             copy.Text.CharFontFamily = shape.Text.CharFontFamily
+            copy.Text.CharFontName = shape.Text.CharFontName
+            copy.Text.CharColor = shape.Text.CharColor
             copy.Position = shape.Position
             copy.Size = shape.Size
             copy.TextVerticalAdjust = shape.TextVerticalAdjust
