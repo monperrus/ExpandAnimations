@@ -21,7 +21,8 @@ jobs:
 
   cd:
     if: github.event_name == 'push' && endsWith(github.ref, '/master')
-
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
     needs: ci
 
     runs-on: ubuntu-latest
