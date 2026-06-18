@@ -23,7 +23,7 @@ compatibility:
 
 dist/$(EXTENSIONNAME)-$(VERSION).oxt: extension/ExpandAnimations/ExpandAnimations.xba
 	mkdir -p dist
-	cd extension; zip -r ../$@ .
+	cd extension; find . -exec touch -t 200001010000 {} +; zip -X -r ../$@ .
 
 extension/ExpandAnimations/ExpandAnimations.xba: src/ExpandAnimations.bas
 	echo '<?xml version="1.0" encoding="UTF-8"?>' > $@
@@ -38,21 +38,21 @@ install: all
 uninstall:
 	-unopkg remove vnd.basicaddonbuilder.expandanimations
 
-	test: all
-		rm -rf $(TEST_PROFILE)
-		mkdir -p $(TEST_PROFILE)
-		unopkg -env:UserInstallation=$(TEST_USER_INSTALLATION) add -f -s dist/$(EXTENSIONNAME)-$(VERSION).oxt
-		libreoffice -env:UserInstallation=$(TEST_USER_INSTALLATION) --headless test/test-ExpandAnimations.odp macro:///ExpandAnimations.ExpandAnimations.test
-		test -f test/test-ExpandAnimations-expanded.odp
-		@if unzip -p test/test-ExpandAnimations-expanded.odp content.xml | grep -E '<anim:|presentation:node-type'; then \
-			echo "Expanded ODP still contains animations"; \
-			exit 1; \
-		fi
-		@if unzip -p test/test-ExpandAnimations-expanded.odp content.xml | grep -E 'text:page-count|text:page-number'; then \
-			echo "Expanded ODP still contains dynamic page fields"; \
-			exit 1; \
-		fi
-		bash pdf-diff.sh
+test: all
+	rm -rf $(TEST_PROFILE)
+	mkdir -p $(TEST_PROFILE)
+	unopkg -env:UserInstallation=$(TEST_USER_INSTALLATION) add -f -s dist/$(EXTENSIONNAME)-$(VERSION).oxt
+	libreoffice -env:UserInstallation=$(TEST_USER_INSTALLATION) --headless test/test-ExpandAnimations.odp macro:///ExpandAnimations.ExpandAnimations.test
+	test -f test/test-ExpandAnimations-expanded.odp
+	@if unzip -p test/test-ExpandAnimations-expanded.odp content.xml | grep -E '<anim:|presentation:node-type'; then \
+		echo "Expanded ODP still contains animations"; \
+		exit 1; \
+	fi
+	@if unzip -p test/test-ExpandAnimations-expanded.odp content.xml | grep -E 'text:page-count|text:page-number'; then \
+		echo "Expanded ODP still contains dynamic page fields"; \
+		exit 1; \
+	fi
+	bash pdf-diff.sh
 	pdffonts test/test-ExpandAnimations.pdf | awk 'NR > 2 && $$(NF-4) != "yes" { print; bad=1 } END { exit bad }'
 	EXPANDANIMATIONS_INPUT=$(CURDIR)/test/BadVerticalAlign.odp libreoffice -env:UserInstallation=$(TEST_USER_INSTALLATION) --headless macro:///ExpandAnimations.ExpandAnimations.CommandLine
 	test -f test/BadVerticalAlign-expanded.odp
