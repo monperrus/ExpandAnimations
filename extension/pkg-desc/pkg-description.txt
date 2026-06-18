@@ -1,4 +1,4 @@
-In Impress, enables to expand "appear" animations and to export to PDF (Tools>>Add-ons>>Expand animations).
+In Impress, expands animations into static slides, removes animations from the expanded presentation, and exports both editable ODP and PDF files. Includes a headless macro for command-line use (Tools>>Add-ons>>Expand animations).
 
 Issue tracker: https://github.com/monperrus/ExpandAnimations/issues
 
@@ -7,6 +7,4 @@ This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
-
-
 
