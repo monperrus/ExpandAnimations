@@ -26,6 +26,7 @@ jobs:
     - name: Test Extension
       run: make test
     - name: Upload Extension Artifact
+      if: github.event_name == 'push'
       uses: actions/upload-artifact@v4
       with:
         name: ExpandAnimations-${{ steps.version.outputs.version }}
