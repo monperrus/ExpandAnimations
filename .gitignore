@@ -1,4 +1,11 @@
 **/ExpandAnimations.xba
+.test-libreoffice-profile/
 test/*.txt
 test/test-ExpandAnimations.pdf
+test/BadVerticalAlign.pdf
+test/links.pdf
+test/UnsupportedEmphasis.pdf
+test/*-expanded.odp
+test/*-expanded.pdf
+test/.~lock*
 dist/*-Snapshot.oxt

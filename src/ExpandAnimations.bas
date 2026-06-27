@@ -19,84 +19,211 @@
 Private ANIMSET as String
 Private ENUMACCESS as String
 Private VISATTR as String
+Private LAST_UNSUPPORTED_SLIDES as Integer
 
 
-' expands the current document and saves it to PDF
-' the expanded version is saved to disk in filename-expanded.odp
-' the PDF is filename-expanded.pdf
+' Expands the current document and writes filename-expanded.odp plus filename.pdf.
 sub Main 
   Dim doc As Object
   doc = thisComponent
   
-  ' the expansion 
+  newUrlExpanded = getExpandedOdpUrl(doc)
+
+  ' the expansion
   newUrlPdf = expandAnimations(doc)
-  
-  msgbox "Expansion done! See "+newUrlPdf
+
+  message = "Expansion done!" + Chr(10) + "ODP: " + newUrlExpanded + Chr(10) + "PDF: " + newUrlPdf
+  if LAST_UNSUPPORTED_SLIDES > 0 then
+    message = message + Chr(10) + Chr(10) + "Warning: " + CStr(LAST_UNSUPPORTED_SLIDES) + " slide(s) contain unsupported animation effects that were not expanded."
+  end if
+  msgbox message
 end sub
 
-' tests the module
-' can be called on the command line with
-' $ libreoffice ${pathToTestFile} "macro:///ExpandAnimations.ExpandAnimations.test"
-sub test
-  Main
+' expands the current document without showing a dialog
+sub Headless(Optional sourceUrl as String)
+  hasSourceUrl = false
+  if not IsMissing(sourceUrl) then
+    if sourceUrl <> "" then
+      hasSourceUrl = true
+    end if
+  end if
+
+  if not hasSourceUrl then
+    doc = getActiveDocument()
+    expandAnimations(doc)
+  else
+    doc = openDocument(sourceUrl)
+    expandAnimations(doc, getDocumentUrlFromSource(sourceUrl))
+  end if
+end sub
+
+' expands the current document without showing a dialog, then exits LibreOffice
+sub CommandLine(Optional sourceUrl as String)
+  hasSourceUrl = false
+  if not IsMissing(sourceUrl) then
+    if sourceUrl <> "" then
+      hasSourceUrl = true
+    end if
+  end if
+
+  if not hasSourceUrl then
+    sourceUrl = Environ("EXPANDANIMATIONS_INPUT")
+  end if
+
+  if sourceUrl = "" then
+    Headless
+  else
+    Headless(sourceUrl)
+  end if
   StarDesktop.terminate
 end sub
 
-' expands the animations and exports to PDF
-function expandAnimations(doc as Object)
-  If Not BasicLibraries.isLibraryLoaded("Tools") then
-     BasicLibraries.loadLibrary("Tools")
-  Endif
 
-  sDocUrl = doc.getURL()
-  sDocPath = DirectoryNameoutofPath(sDocUrl, "/")
-  sDocFileNameWithoutExtension = GetFileNameWithoutExtension(sDocUrl, "/")
+function getActiveDocument()
+  On Error Resume Next
+
+  for attempt = 1 to 50
+    doc = StarDesktop.CurrentComponent
+    docUrl = getDocumentUrl(doc)
+    if docUrl <> "" then
+      getActiveDocument = doc
+      exit function
+    end if
+    Wait 200
+  next
+
+  getActiveDocument = ThisComponent
+end function
+
+
+function getDocumentUrl(doc as Object) as String
+  On Error Resume Next
+  getDocumentUrl = ""
+  getDocumentUrl = doc.getURL()
+end function
+
+
+function openDocument(sourceUrl as String)
+  docUrl = getDocumentUrlFromSource(sourceUrl)
+
+  Dim loadProps()
+  openDocument = StarDesktop.loadComponentFromURL(docUrl, "_blank", 0, loadProps)
+end function
+
+
+function getDocumentUrlFromSource(sourceUrl as String) as String
+  getDocumentUrlFromSource = sourceUrl
+  if Left(getDocumentUrlFromSource, 5) <> "file:" then
+    getDocumentUrlFromSource = ConvertToURL(sourceUrl)
+  end if
+end function
+
+' tests the module
+' can be called on the command line with
+' $ EXPANDANIMATIONS_INPUT=${pathToTestFile} libreoffice --headless "macro:///ExpandAnimations.ExpandAnimations.test"
+sub test
+  CommandLine
+end sub
+
+' expands the animations and exports to ODP and PDF
+function expandAnimations(doc as Object, Optional sourceUrl as String)
+  if IsMissing(sourceUrl) then
+    sDocUrl = doc.getURL()
+  else
+    sDocUrl = sourceUrl
+  end if
+  sDocPath = getDirectoryNameFromUrl(sDocUrl)
+  sDocFileNameWithoutExtension = getFileNameWithoutExtensionFromUrl(sDocUrl)
+  newUrlExpanded = getExpandedOdpUrlFromUrl(sDocUrl)
   newUrlPdf = sDocPath + "/" + sDocFileNameWithoutExtension + ".pdf"
 
-  ' rename the document
-  docExpanded = renameAsExpanded(doc)
+  if IsMissing(sourceUrl) then
+    docExpanded = renameAsExpanded(doc, newUrlExpanded)
+  else
+    docExpanded = renameAsExpanded(doc, newUrlExpanded, sDocUrl)
+  end if
 
-  ' expand it
-  numSlides = doc.getDrawPages().getCount()
-  oStatusBar = ThisComponent.getCurrentController.StatusIndicator
-  oStatusBar.start("Expanding Slides", numSlides)
-  expandDocument(docExpanded, oStatusBar)
-  
-  ' export to PDF
-  oStatusBar.setText("Exporting to PDF")
-  oStatusBar.setValue(numSlides)
+  expandDocument(docExpanded)
   exportToPDF(docExpanded, newUrlPdf)
-  oStatusBar.end()
 
-  ' return the PDF file name
   expandAnimations = newUrlPdf
   
-  ' closing the expanded version  
   docExpanded.close(false)
+end function
+
+
+' returns the URL used for the expanded ODP
+function getExpandedOdpUrl(doc as Object)
+  getExpandedOdpUrl = getExpandedOdpUrlFromUrl(doc.getURL())
+end function
+
+
+function getExpandedOdpUrlFromUrl(sDocUrl as String)
+  sDocPath = getDirectoryNameFromUrl(sDocUrl)
+  sDocFileNameWithoutExtension = getFileNameWithoutExtensionFromUrl(sDocUrl)
+
+  getExpandedOdpUrlFromUrl = sDocPath + "/" + sDocFileNameWithoutExtension + "-expanded.odp"
+end function
+
+
+function getDirectoryNameFromUrl(docUrl as String) as String
+  slashPos = lastIndexOf(docUrl, "/")
+  if slashPos > 0 then
+    getDirectoryNameFromUrl = Left(docUrl, slashPos-1)
+  else
+    getDirectoryNameFromUrl = docUrl
+  end if
+end function
+
+
+function getFileNameWithoutExtensionFromUrl(docUrl as String) as String
+  slashPos = lastIndexOf(docUrl, "/")
+  if slashPos > 0 then
+    fileName = Mid(docUrl, slashPos+1)
+  else
+    fileName = docUrl
+  end if
+
+  dotPos = lastIndexOf(fileName, ".")
+  if dotPos > 1 then
+    getFileNameWithoutExtensionFromUrl = Left(fileName, dotPos-1)
+  else
+    getFileNameWithoutExtensionFromUrl = fileName
+  end if
+end function
+
+
+function lastIndexOf(value as String, token as String) as Integer
+  lastIndexOf = 0
+  tokenLen = Len(token)
+  if tokenLen = 0 then
+    exit function
+  end if
+
+  for pos = Len(value) - tokenLen + 1 to 1 step -1
+    if Mid(value, pos, tokenLen) = token then
+      lastIndexOf = pos
+      exit function
+    end if
+  next
 end function
 
 
 ' saves the (current) document with a new file name
 ' e.g. test.odp -> test-expanded.odp
-function renameAsExpanded(doc as Object)
+function renameAsExpanded(doc as Object, newUrlExpanded as String, Optional sourceUrl as String)
   Dim Dummy()
+
+  if IsMissing(sourceUrl) then
+    doc.storeToUrl(newUrlExpanded, Array(makePropertyValue("Overwrite", True)))
+  else
+    fileAccess = createUnoService("com.sun.star.ucb.SimpleFileAccess")
+    if fileAccess.exists(newUrlExpanded) then
+      fileAccess.kill(newUrlExpanded)
+    end if
+    fileAccess.copy(sourceUrl, newUrlExpanded)
+  end if
   
-  If Not BasicLibraries.isLibraryLoaded("Tools") then
-     BasicLibraries.loadLibrary("Tools")
-  Endif
-
-  sDocUrl = doc.getURL()
-  sDocFileNameWithoutExtension = GetFileNameWithoutExtension(sDocUrl, "/") 
-
-  sTemp = Replace(Environ("TEMP"), "\", "/")
-  If sTemp = "" Then
-    sTemp="/tmp"
-  EndIf
-
-  newUrlExpanded = "file:///" + sTemp + "/" + sDocFileNameWithoutExtension + "-expanded.odp"
-  doc.storeToUrl(newUrlExpanded, Array())
-  
-  ' reloading the saved document
   expandedDoc = StarDesktop.loadComponentFromURL(newUrlExpanded, "_default", 0, Dummy)  
   
   renameAsExpanded = expandedDoc
@@ -105,9 +232,14 @@ end function
 
 ' exports to PDF
 sub exportToPDF(doc as Object, newUrlPdf as String)
-  ' we use storeToUrl because we don't want to load the PDF
-  ' actually we have to, otherwise, there is an error
-  doc.storeToUrl(newUrlPdf, Array(makePropertyValue("FilterName", "impress_pdf_Export")))
+  Dim filterData(3)
+
+  filterData(0) = makePropertyValue("ExportBookmarksToPDFDestination", True)
+  filterData(1) = makePropertyValue("PDFViewSelection", 1)
+  filterData(2) = makePropertyValue("ConvertOOoTargetToPDFTarget", True)
+  filterData(3) = makePropertyValue("EmbedStandardFonts", True)
+
+  doc.storeToUrl(newUrlPdf, Array(makePropertyValue("FilterName", "impress_pdf_Export"), makePropertyValue("FilterData", filterData)))
 end sub
 
 
@@ -126,28 +258,34 @@ Function makePropertyValue( Optional cName As String, Optional uValue ) As com.s
 End Function 
 
 
-function expandDocument(doc as Object, oStatusBar as Object)
+function expandDocument(doc as Object)
     ANIMSET = "com.sun.star.animations.XAnimateSet"
     ENUMACCESS = "com.sun.star.container.XEnumerationAccess"
     VISATTR = "Visibility"
+    LAST_UNSUPPORTED_SLIDES = 0
     
     numSlides = doc.getDrawPages().getCount()
+    sourcePdfPages = getSourcePdfPageMap(doc)
 
-    ' go through pages in reverse order
+    ' Work backwards so duplicated slides do not disturb the remaining indexes.
     for i = numSlides-1 to 0 step -1
         slide = doc.drawPages(i)
+        fixatePageFieldsInShapes(slide, i+1, numSlides)
         if slide.IsPageNumberVisible then
-            fixateSlideNumber(doc, slide, i+1, numSlides)
+            fixateMasterPageNumber(doc, slide, i+1, numSlides)
         end if
-        ' If the slide name is pageXXn it is an autogenerated name
-        ' It is impossible to name a slide "Slide XX", but "Slide: XX" works
+        ' Auto-generated slide names are not stable PDF targets.
         if Left(slide.Name, 4) = "page" then
         	slide.Name = "Slide: " & CStr(i+1)
         end if
-        oStatusBar.setValue(numSlides-i)
         if hasAnimation(slide) then
             n = countAnimationSteps(slide)
-            if n > 1 and not somethingWrong(slide) then
+            if n > 1 and hasUnsupportedAnimation(slide) then
+                LAST_UNSUPPORTED_SLIDES = LAST_UNSUPPORTED_SLIDES + 1
+            end if
+            if n > 1 and hasNoSupportedAnimationTargets(slide) then
+                ' keep slide as-is; unsupported effects are reported above
+            elseif n > 1 then
                 origName = slide.Name
                 replicateSlide(doc, slide, n)
                 visArray = getShapeVisibility(slide, n)
@@ -158,16 +296,220 @@ function expandDocument(doc as Object, oStatusBar as Object)
                 next
             end if
         end if
+        Wait 1
     next
 
-    finalSlides = doc.getDrawPages().getCount()
-    'MsgBox("Done! Expanded " & CStr(numSlides) & " slides to " & CStr(finalSlides) & ".")
+    removeHiddenSlides(doc)
+    renameSlidesForExportedOrder(doc)
+    fixInternalLinks(doc, sourcePdfPages)
+    clearAllAnimations(doc)
     
-    ' saving the expanded version
-  doc.store()
+  storeExpandedDocument(doc)
 end function
 
-function fixateSlideNumber(doc as Object, slide as Object, slideNr as Integer, slideCount as Integer)
+
+sub storeExpandedDocument(doc as Object)
+    doc.storeToUrl(doc.getURL(), Array(makePropertyValue("Overwrite", True)))
+end sub
+
+
+' Name visible slides after their exported PDF page number so internal links
+' survive both the macro PDF export and later manual exports from the ODP.
+sub renameSlidesForExportedOrder(doc as Object)
+    pages = doc.getDrawPages()
+
+    for pageNr = 0 to pages.getCount()-1
+        pages.getByIndex(pageNr).Name = "ExpandAnimationsTmp" & CStr(pageNr+1)
+    next
+
+    pdfPage = 1
+    hiddenPage = 1
+    for pageNr = 0 to pages.getCount()-1
+        slide = pages.getByIndex(pageNr)
+        if slide.Visible then
+            slide.Name = "Slide: " & CStr(pdfPage)
+            pdfPage = pdfPage + 1
+        else
+            slide.Name = "Hidden Slide: " & CStr(hiddenPage)
+            hiddenPage = hiddenPage + 1
+        end if
+    next
+end sub
+
+
+sub removeHiddenSlides(doc as Object)
+    pages = doc.getDrawPages()
+    for pageNr = pages.getCount()-1 to 0 step -1
+        slide = pages.getByIndex(pageNr)
+        if not slide.Visible then
+            pages.remove(slide)
+        end if
+    next
+end sub
+
+
+' Map original slide numbers to their first visible page in the exported PDF.
+function getSourcePdfPageMap(doc as Object)
+    numSlides = doc.getDrawPages().getCount()
+    Dim sourcePdfPages() As Integer
+    ReDim sourcePdfPages(numSlides-1)
+    pdfPage = 1
+
+    for slideNr = 0 to numSlides-1
+        slide = doc.drawPages(slideNr)
+        if slide.Visible then
+            sourcePdfPages(slideNr) = pdfPage
+            pdfPage = pdfPage + getExpandedFrameCount(slide)
+        else
+            sourcePdfPages(slideNr) = 0
+        end if
+    next
+
+    getSourcePdfPageMap = sourcePdfPages
+end function
+
+
+function getExpandedFrameCount(slide as Object) as Integer
+    getExpandedFrameCount = 1
+    if hasAnimation(slide) then
+        n = countAnimationSteps(slide)
+        if n > 1 and not hasNoSupportedAnimationTargets(slide) then
+            getExpandedFrameCount = n
+        end if
+    end if
+end function
+
+
+' Rewrite internal links to target the visible PDF page produced by expansion.
+sub fixInternalLinks(doc as Object, sourcePdfPages)
+    pages = doc.getDrawPages()
+    for pageNr = 0 to pages.getCount()-1
+        fixInternalLinksInShapes(doc, pages.getByIndex(pageNr), sourcePdfPages)
+    next
+end sub
+
+
+sub fixInternalLinksInShapes(doc as Object, shapes as Object, sourcePdfPages)
+    for shapeNr = 0 to shapes.getCount()-1
+        shape = shapes.getByIndex(shapeNr)
+        if HasUnoInterfaces(shape, "com.sun.star.container.XIndexAccess") then
+            fixInternalLinksInShapes(doc, shape, sourcePdfPages)
+        elseif HasUnoInterfaces(shape, "com.sun.star.text.XText") then
+            fixInternalLinksInText(doc, shape.Text, sourcePdfPages)
+        end if
+    next
+end sub
+
+
+sub fixInternalLinksInText(doc as Object, text as Object, sourcePdfPages)
+    paragraphs = text.createEnumeration()
+    while paragraphs.hasMoreElements()
+        paragraph = paragraphs.nextElement()
+        portions = paragraph.createEnumeration()
+        while portions.hasMoreElements()
+            fixInternalLinkInPortion(doc, portions.nextElement(), sourcePdfPages)
+        wend
+    wend
+end sub
+
+
+sub fixInternalLinkInPortion(doc as Object, portion as Object, sourcePdfPages)
+    On Error Resume Next
+
+    if portion.TextPortionType = "TextField" then
+        field = portion.TextField
+        if field.supportsService("com.sun.star.text.TextField.URL") then
+            fixedUrl = getFixedInternalLinkUrl(field.URL, sourcePdfPages)
+            if fixedUrl <> field.URL then
+                replacement = doc.createInstance("com.sun.star.text.TextField.URL")
+                replacement.URL = fixedUrl
+                replacement.Representation = field.Representation
+                replacement.TargetFrame = field.TargetFrame
+                field.Anchor.Text.insertTextContent(field.Anchor, replacement, True)
+            end if
+        end if
+    end if
+
+    linkUrl = ""
+    linkUrl = portion.HyperLinkURL
+    if linkUrl <> "" then
+        fixedUrl = getFixedInternalLinkUrl(linkUrl, sourcePdfPages)
+        if fixedUrl <> linkUrl then
+            portion.HyperLinkURL = fixedUrl
+        end if
+    end if
+end sub
+
+
+function getFixedInternalLinkUrl(url as String, sourcePdfPages)
+    getFixedInternalLinkUrl = url
+
+    sourceSlideNr = getSlideNumberFromInternalLink(url)
+    if sourceSlideNr < 1 or sourceSlideNr > UBound(sourcePdfPages)+1 then
+        exit function
+    end if
+
+    pdfPage = sourcePdfPages(sourceSlideNr-1)
+    if pdfPage > 0 then
+        getFixedInternalLinkUrl = "#Slide: " & CStr(pdfPage)
+    end if
+end function
+
+
+function getSlideNumberFromInternalLink(url as String) as Integer
+    getSlideNumberFromInternalLink = 0
+    if Len(url) < 2 or Left(url, 1) <> "#" then
+        exit function
+    end if
+
+    target = Mid(url, 2)
+    endPos = Len(target)
+    while endPos > 0 and not isAsciiDigit(Mid(target, endPos, 1))
+        endPos = endPos - 1
+    wend
+    if endPos = 0 then
+        exit function
+    end if
+
+    startPos = endPos
+    while startPos > 0 and isAsciiDigit(Mid(target, startPos, 1))
+        startPos = startPos - 1
+    wend
+
+    getSlideNumberFromInternalLink = CInt(Val(Mid(target, startPos+1, endPos-startPos)))
+end function
+
+
+function isAsciiDigit(ch as String) as Boolean
+    if Len(ch) = 0 then
+        isAsciiDigit = false
+    else
+        charCode = Asc(ch)
+        isAsciiDigit = charCode >= 48 and charCode <= 57
+    end if
+end function
+
+
+' Remove animation timelines from the expanded document.
+sub clearAllAnimations(doc as Object)
+    pages = doc.getDrawPages()
+    for pageNr = 0 to pages.getCount()-1
+        clearAnimations(pages.getByIndex(pageNr))
+    next
+end sub
+
+
+sub clearAnimations(slide as Object)
+    On Error Resume Next
+
+    animationRoot = slide.AnimationNode
+    animationNodes = animationRoot.createEnumeration()
+    Do While animationNodes.hasMoreElements()
+        animationRoot.removeChild(animationNodes.nextElement())
+    Loop
+end sub
+
+function fixateMasterPageNumber(doc as Object, slide as Object, slideNr as Integer, slideCount as Integer)
     master = slide.MasterPage
     shapeCount = master.getCount()
     for shapeNr = 0 to shapeCount-1
@@ -175,10 +517,9 @@ function fixateSlideNumber(doc as Object, slide as Object, slideNr as Integer, s
         shapeType = shape.getShapeType()
         if shapeType = "com.sun.star.presentation.SlideNumberShape" then
             copy = doc.createInstance("com.sun.star.drawing.TextShape")
-            'Call Tools.WritedbgInfo(shape)
             slide.IsPageNumberVisible = False
             slide.add(copy)
-            copy.setString(CStr(slideNr) & " / " & CStr(slideCount))
+            copy.setString(getTextWithFixedPageFields(shape, slideNr, slideCount))
             copy.Style = shape.Style
             copy.Text.Style = shape.Text.Style
             copy.Text.CharHeight = shape.Text.CharHeight
@@ -193,16 +534,77 @@ function fixateSlideNumber(doc as Object, slide as Object, slideNr as Integer, s
     next
 end function
 
-function somethingWrong( slide as Object )
+' Replace page-number and page-count fields with fixed values before duplicating slides.
+function fixatePageFieldsInShapes(shapes as Object, slideNr as Integer, slideCount as Integer)
+    for shapeNr = 0 to shapes.getCount()-1
+        shape = shapes.getByIndex(shapeNr)
+        if HasUnoInterfaces(shape, "com.sun.star.container.XIndexAccess") then
+            fixatePageFieldsInShapes(shape, slideNr, slideCount)
+        elseif HasUnoInterfaces(shape, "com.sun.star.text.XText") then
+            fixatePageFieldsInText(shape.Text, slideNr, slideCount)
+        end if
+    next
+end function
+
+function fixatePageFieldsInText(text as Object, slideNr as Integer, slideCount as Integer)
+    paragraphs = text.createEnumeration()
+    while paragraphs.hasMoreElements()
+        paragraph = paragraphs.nextElement()
+        portions = paragraph.createEnumeration()
+        while portions.hasMoreElements()
+            portion = portions.nextElement()
+            if portion.TextPortionType = "TextField" then
+                field = portion.TextField
+                if field.supportsService("com.sun.star.text.TextField.PageNumber") then
+                    field.Anchor.String = CStr(slideNr)
+                elseif field.supportsService("com.sun.star.text.TextField.PageCount") then
+                    field.Anchor.String = CStr(slideCount)
+                end if
+            end if
+        wend
+    wend
+end function
+
+function getTextWithFixedPageFields(shape as Object, slideNr as Integer, slideCount as Integer)
+    fixedText = ""
+    firstParagraph = true
+    paragraphs = shape.Text.createEnumeration()
+    while paragraphs.hasMoreElements()
+        if not firstParagraph then
+            fixedText = fixedText + Chr(13)
+        end if
+        firstParagraph = false
+
+        paragraph = paragraphs.nextElement()
+        portions = paragraph.createEnumeration()
+        while portions.hasMoreElements()
+            portion = portions.nextElement()
+            portionText = portion.String
+            if portion.TextPortionType = "TextField" then
+                field = portion.TextField
+                if field.supportsService("com.sun.star.text.TextField.PageNumber") then
+                    portionText = CStr(slideNr)
+                elseif field.supportsService("com.sun.star.text.TextField.PageCount") then
+                    portionText = CStr(slideCount)
+                end if
+            end if
+            fixedText = fixedText + portionText
+        wend
+    wend
+
+    getTextWithFixedPageFields = fixedText
+end function
+
+function hasNoSupportedAnimationTargets(slide as Object)
     shapes = getAnimatedShapes(slide)
     if UBound(shapes) = -1 then
-      somethingWrong = true
+      hasNoSupportedAnimationTargets = true
     else
-      somethingWrong = false
+      hasNoSupportedAnimationTargets = false
     end if
 end function
 
-' get a list of all shapes whose visibility is changed during the animation
+' Get the shapes whose visibility changes during the animation.
 function getAnimatedShapes(slide as Object)
      shapes = Array() ' start with an empty array
  
@@ -230,7 +632,6 @@ function getAnimatedShapes(slide as Object)
                       if isVisibilityAnimation(animNode) then
                           target = animNode.target
                           if not IsEmpty(target) then
-                            ' if we haven't seen this shape yet, add it to the array
                               if not containsObject(shapes, target) then
                                   newUBound = UBound(shapes) + 1
                                   reDim preserve shapes(newUBound)
@@ -247,21 +648,51 @@ function getAnimatedShapes(slide as Object)
 end function
 
 
-' create a 2-D array giving the visibility of each animated
-' shape for each frame in the expanded animation
+function hasUnsupportedAnimation(slide as Object) as Boolean
+     hasUnsupportedAnimation = false
+
+     if not hasAnimation(slide) then
+         exit function
+     end if
+
+    mainSequence = getMainSequence(slide)
+    clickNodes = mainSequence.createEnumeration()
+    while clickNodes.hasMoreElements()
+        clickNode = clickNodes.nextElement()
+
+        groupNodes = clickNode.createEnumeration()
+        while groupNodes.hasMoreElements()
+            groupNode = groupNodes.nextElement()
+
+            effectNodes = groupNode.createEnumeration()
+            while effectNodes.hasMoreElements()
+                effectNode = effectNodes.nextElement()
+                if HasUnoInterfaces(effectNode, ENUMACCESS) then
+                  animNodes = effectNode.createEnumeration()
+                  while animNodes.hasMoreElements()
+                      animNode = animNodes.nextElement()
+                      if not isVisibilityAnimation(animNode) then
+                          hasUnsupportedAnimation = true
+                          exit function
+                      end if
+                  wend
+              end if
+            wend
+        wend
+    wend
+end function
+
+
+' Build the visibility state of each animated shape for each exported frame.
 function getShapeVisibility(slide as Object, nFrames as Integer)
      shapes = getAnimatedShapes(slide)
      dim visibility(UBound(shapes), nFrames-1) as Boolean
      
-     ' loop over all animated shapes
      for n = 0 to UBound(shapes)
          shape = shapes(n)
          visKnown = false
          visCurrent = false
      
-         ' iterate over the animations for this slide,
-         ' looking for those that change the visibility
-         ' of the current shape
          mainSequence = getMainSequence(slide)
         if HasUnoInterfaces(mainSequence, ENUMACCESS) then            
             clickNodes = mainSequence.createEnumeration()
@@ -282,15 +713,12 @@ function getShapeVisibility(slide as Object, nFrames as Integer)
                                animNode = animNodes.nextElement()
                                if isVisibilityAnimation(animNode) then
                                   target = animNode.target
-                                  ' if this is the shape we want, check the visibility
                                   sameStruct = false
                                   if IsUnoStruct(target) AND IsUnoStruct(shape) then
                                     sameStruct = EqualUnoObjects(shape.Shape, target.Shape) AND shape.Paragraph=target.Paragraph
                                   end if
                                   if EqualUnoObjects(shape, target) OR sameStruct then
                                       visCurrent = animNode.To
-                                      ' if this is the first time we've seen this
-                                      ' shape, set the visibility on the previous frames
                                       if visKnown = false then
                                           for i = 0 to currentFrame
                                               visibility(n, i) = not visCurrent
@@ -312,23 +740,21 @@ function getShapeVisibility(slide as Object, nFrames as Integer)
 end function
 
 
-' remove from the given slide all shapes that are invisible in the specified frame
+' Remove content that should not be visible in the specified exported frame.
 sub removeInvisibleShapes(slide as Object, visibility, frame as Integer)
      shapes = getAnimatedShapes(slide)
      for n = 0 to UBound(shapes)
         if visibility(n, frame) = false then
-            'special handling for com.sun.star.presentation.ParagraphTarget
             if (IsUnoStruct(shapes(n))) then
                 shape=shapes(n).Shape
                 para = shapes(n).Paragraph
                 count = 0
                 eNum =  shape.createEnumeration
-                ' for each paragraph in textbox
                 Do while eNum.HasMoreElements()
                     oAObj = eNum.nextElement()
-                    ' remove those whose index larger than shapes(n).Paragraph
+                    ' Keep a blank line so vertical alignment and autofit stay stable.
                     if count >= para then
-                        oAObj.String = ""
+                        oAObj.String = " "
                         oAObj.NumberingIsNumber = false
                     end if
                     count = count + 1
@@ -341,16 +767,15 @@ sub removeInvisibleShapes(slide as Object, visibility, frame as Integer)
 end sub
 
 
-' checks if the given animation node changes a shape's visibility
+' Check whether an animation node changes a shape's visibility.
 function isVisibilityAnimation(animNode as Object) as Boolean
     On Error Resume Next
-    isVivibilityAnimation = False
+    isVisibilityAnimation = False
     isVisibilityAnimation = HasUnoInterfaces(animNode, ANIMSET) and _
                             (animNode.AttributeName = VISATTR)
 end function
 
 
-' check if an object (needle) is contained in an array (haystack)
 function containsObject(haystack as Object, needle as Object) as Boolean
     containsObject = false
     for each item in haystack
@@ -362,21 +787,20 @@ function containsObject(haystack as Object, needle as Object) as Boolean
 end function
 
 
-' determine whether the given drawPage has animations attached
+' Determine whether the given drawPage has animations attached.
 function hasAnimation(slide as Object) as Boolean
     mainSequence = getMainSequence(slide)
     hasAnimation = HasUnoInterfaces(mainSequence, ENUMACCESS)
 end function
 
 
-' count the number of frames in the animation for the given slide
+' Count the number of frames in the animation for the given slide.
 function countAnimationSteps(slide as Object) as Integer
     mainSequence = getMainSequence(slide)
     countAnimationSteps = countElements(mainSequence) + 1
 end function
 
 
-' count the number of elements in an enumerable object
 function countElements(enumerable as Object) as Integer
     oEnum = enumerable.createEnumeration()
     n = 0
@@ -388,10 +812,7 @@ function countElements(enumerable as Object) as Integer
 end function
 
 
-' make n-1 copies of the given slide in the given doc
-' when done, the slide will appear a total of n times
-' note that doc.duplicate adds copies immediately after
-' the page being copied
+' doc.duplicate inserts each copy immediately after the source slide.
 function replicateSlide(doc, slide, n)
     for i = 1 to n-1
         doc.duplicate(slide)
