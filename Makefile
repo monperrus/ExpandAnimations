@@ -1,11 +1,28 @@
 # Makefile for building LibreOffice/OpenOffice extensions
 
 EXTENSIONNAME=ExpandAnimations
-VERSION=$(shell xmlstarlet sel -N oo="http://openoffice.org/extensions/description/2006" -t -v "//oo:version/@value" extension/description.xml)
+VERSION=$(shell sed -n 's/.*<version value="\([^"]*\)".*/\1/p' extension/description.xml)
+TEST_PROFILE=$(CURDIR)/.test-libreoffice-profile
+TEST_USER_INSTALLATION=file://$(TEST_PROFILE)
+ifeq ($(VERSION),)
+$(error Could not read extension version from extension/description.xml)
+endif
 
 all: dist/$(EXTENSIONNAME)-$(VERSION).oxt
 
+validate: all
+	unzip -t dist/$(EXTENSIONNAME)-$(VERSION).oxt
+	unzip -Z1 dist/$(EXTENSIONNAME)-$(VERSION).oxt | grep -Fxq META-INF/manifest.xml
+	unzip -Z1 dist/$(EXTENSIONNAME)-$(VERSION).oxt | grep -Fxq description.xml
+	unzip -Z1 dist/$(EXTENSIONNAME)-$(VERSION).oxt | grep -Fxq Addons.xcu
+	unzip -Z1 dist/$(EXTENSIONNAME)-$(VERSION).oxt | grep -Fxq ExpandAnimations/ExpandAnimations.xba
+
+compatibility:
+	libreoffice --version
+	unopkg --version
+
 dist/$(EXTENSIONNAME)-$(VERSION).oxt: extension/ExpandAnimations/ExpandAnimations.xba
+	mkdir -p dist
 	cd extension; zip -r ../$@ .
 
 extension/ExpandAnimations/ExpandAnimations.xba: src/ExpandAnimations.bas
@@ -16,13 +33,16 @@ extension/ExpandAnimations/ExpandAnimations.xba: src/ExpandAnimations.bas
 	echo '</script:module>' >> $@
 
 install: all
-	$(shell unopkg add -s dist/$(EXTENSIONNAME)-$(VERSION).oxt)
+	unopkg add -s dist/$(EXTENSIONNAME)-$(VERSION).oxt
 
 uninstall:
-	$(shell unopkg remove vnd.basicaddonbuilder.expandanimations)
+	-unopkg remove vnd.basicaddonbuilder.expandanimations
 
-test: uninstall install
-	$(shell libreoffice --headless test/test-ExpandAnimations.odp macro:///ExpandAnimations.ExpandAnimations.test)
+test: all
+	rm -rf $(TEST_PROFILE)
+	mkdir -p $(TEST_PROFILE)
+	unopkg -env:UserInstallation=$(TEST_USER_INSTALLATION) add -f -s dist/$(EXTENSIONNAME)-$(VERSION).oxt
+	libreoffice -env:UserInstallation=$(TEST_USER_INSTALLATION) --headless test/test-ExpandAnimations.odp macro:///ExpandAnimations.ExpandAnimations.test
 	bash pdf-diff.sh
 
 clean:
@@ -31,6 +51,4 @@ clean:
 	rm -f test/*.txt
 	rm -f test/.~lock*
 	rm -f dist/$(EXTENSIONNAME)-$(VERSION).oxt
-
-
-
+	rm -rf $(TEST_PROFILE)
