@@ -34,11 +34,6 @@ input_file="$(realpath "$1")"
 EXPANDANIMATIONS_INPUT="$input_file" libreoffice --headless "macro:///ExpandAnimations.ExpandAnimations.CommandLine"
 ```
 
-Compatibility
--------------
-
-The current extension has been tested with LibreOffice 24.2.7.2 on Linux. The CI workflow prints a compatibility report with the LibreOffice and `unopkg` versions used for each run.
-
 Current limitations
 -------------------
 
