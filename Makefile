@@ -23,7 +23,7 @@ compatibility:
 
 dist/$(EXTENSIONNAME)-$(VERSION).oxt: extension/ExpandAnimations/ExpandAnimations.xba
 	mkdir -p dist
-	cd extension; find . -exec touch -t 200001010000 {} +; zip -X -r ../$@ .
+	cd extension; zip -r ../$@ .
 
 extension/ExpandAnimations/ExpandAnimations.xba: src/ExpandAnimations.bas
 	echo '<?xml version="1.0" encoding="UTF-8"?>' > $@
