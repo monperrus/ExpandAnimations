@@ -4,64 +4,61 @@ on: [push, pull_request]
 
 jobs:
   ci:
-
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
     - name: Install LibreOffice
-      run: sudo apt-get install libreoffice-impress xmlstarlet poppler-utils
+      run: sudo apt-get update && sudo apt-get install -y libreoffice-impress poppler-utils zip unzip
+    - name: Compatibility Report
+      run: make compatibility
+    - name: Set Version
+      id: version
+      run: |
+        version=`sed -n 's/.*<version value="\([^"]*\)".*/\1/p' extension/description.xml`
+        echo "version=$version" >> "$GITHUB_OUTPUT"
     - name: Build Extension
       run: make
-    - name: Install Extension
-      run: make install
+    - name: Validate Extension Archive
+      run: make validate
     - name: Test Extension
       run: make test
-
+    - name: Upload Extension Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ExpandAnimations-${{ steps.version.outputs.version }}
+        path: dist/ExpandAnimations-${{ steps.version.outputs.version }}.oxt
 
   cd:
-    if: github.event_name == 'push' && endsWith(github.ref, '/master')
-    env:
-      ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+    if: github.event_name == 'push' && github.repository == 'monperrus/ExpandAnimations' && endsWith(github.ref, '/master')
     needs: ci
 
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
     - name: Install Dependencies
-      run: sudo apt-get install xmlstarlet
+      run: sudo apt-get update && sudo apt-get install -y zip unzip
     - name: Build Extension
       run: make
+    - name: Validate Extension Archive
+      run: make validate
     - name: Set Version
       run: |
-          version=`xmlstarlet sel -N oo="http://openoffice.org/extensions/description/2006" -t -v "//oo:version/@value" extension/description.xml`
-          echo ::set-env name=VERSION::$version
-    - name: Create GitHub Releases
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions
-      with:
-        tag_name: ${{ env.VERSION }}
-        release_name: Release ${{ env.VERSION }}
-        # Uncomment if some release notes are available
-        #body: |
-        #  Changes in this Release
-        #  - First Change
-        #  - Second Change
-        draft: false
-        prerelease: false
-    - name: Post Extension to GitHub Releases
-      id: upload-release-asset
-      uses: actions/upload-release-asset@v1
+        version=`sed -n 's/.*<version value="\([^"]*\)".*/\1/p' extension/description.xml`
+        echo "VERSION=$version" >> "$GITHUB_ENV"
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-        asset_path: ./dist/ExpandAnimations-${{ env.VERSION }}.oxt
-        asset_name: ExpandAnimations-${{ env.VERSION }}.oxt
-        asset_content_type: application/zip
+        tag_name: ${{ env.VERSION }}
+        name: Release ${{ env.VERSION }}
+        files: ./dist/ExpandAnimations-${{ env.VERSION }}.oxt
     - name: Increase Version
       run: ./increase-version.sh
     - name: Commit Git Changes
